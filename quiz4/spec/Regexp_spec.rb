@@ -37,8 +37,12 @@ describe "Regexp" do
     ("1100000" =~ pos_under_mil).should == nil
   end
 
-  it 'should accept underscores' do
-    pos_under_mil = Regexp.build( 486..32_345 )
+  it 'should accept words to' do
+    words = Regexp.build( 'hi','there','you' )
+    ("hi"     =~ words).should == 0
+    ("there"  =~ words).should == 0
+    ("you"    =~ words).should == 0
+    ("dorks"  =~ words).should == nil
   end
 
 end

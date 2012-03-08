@@ -11,7 +11,7 @@ class Regexp
                 end_value_length = end_value.to_s.length
                 length_dif = end_value_length - start_value_length
                 if length_dif > 1 then
-                    matching_string += format_acceptable_value("\\d{#{start_value_length+1},#{end_value_length-1}}")
+                    matching_string += format_acceptable_value("0*\\d{#{start_value_length+1},#{end_value_length-1}}")
                     matching_string += add_start_matches(start_value)
                     matching_string += add_end_matches(start_value)
                 else
@@ -72,6 +72,10 @@ class Regexp
     end
 
     def self.format_acceptable_value(value)
-        return '|^' + value + '$'
+        if value.match('^\d+$') then
+            return '|^0*' + value + '$'
+        else
+            return '|^' + value + '$'
+        end
     end
 end
