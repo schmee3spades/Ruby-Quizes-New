@@ -9,8 +9,8 @@ module RubyQuiz
         self.select_maze
       else
         self.parse_string_into_puzzle_matrix(string)
+        self.validate()
       end
-      self.validate()
     end
 
     def select_maze()
@@ -47,17 +47,8 @@ module RubyQuiz
       return count
     end
 
-    def get_maze_string()
-      puts "Input maze, blank line to end input"
-      maze_string = String.new()
-      while((line = gets) != "\n")
-        maze_string += line
-      end
-    end
-
     def parse_string_into_puzzle_matrix(string)
-      lines = string.split("\n")
-      lines.each do |line|
+      string.split("\n").each do |line|
         @puzzle_matrix << line.split(//)
         if index = line.split(//).index("+") then
           @man_row = (@puzzle_matrix.size - 1).to_s;
@@ -82,14 +73,11 @@ module RubyQuiz
     def destination_from_direction(row, column, direction)
       if direction == 'right' then
         column = column.to_i + 1
-      end
-      if direction == 'left' then
+      elsif direction == 'left' then
         column = column.to_i - 1
-      end
-      if direction == 'up' then
+      elsif direction == 'up' then
         row = row.to_i - 1
-      end
-      if direction == 'down' then
+      elsif direction == 'down' then
         row = row.to_i + 1
       end
       return row, column
@@ -102,17 +90,13 @@ module RubyQuiz
         if input != nil
           if input == 'q'
             return
-          end
-          if input == '8' or input == 'k' then
+          elsif input == '8' or input == 'k' then
             self.move('up')
-          end
-          if input == '4' or input == 'h' then
+          elsif input == '4' or input == 'h' then
             self.move('left')
-          end
-          if input == '2' or input == 'j' then
+          elsif input == '2' or input == 'j' then
             self.move('down')
-          end
-          if input == '6' or input == 'l' then
+          elsif input == '6' or input == 'l' then
             self.move('right')
           end
         end

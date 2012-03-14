@@ -32,17 +32,6 @@ describe "Sokoban" do
     game.person_position().should == [8,11]
   end
 
-#  it 'should error if no outside boundry' do
-#    Sokoban.new( '
-######
-#    #
-##o  #
-##@ #
-#####
-#    ').should == nil;
-#    Sokoban.error_message.should == 'Maze does not have proper boundry';
-#  end
-#
   it 'should error if no person' do
     maze = RubyQuiz::Sokoban.new(
 "#####
