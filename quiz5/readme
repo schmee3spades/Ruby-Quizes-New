@@ -1,0 +1,3 @@
+require '/home/bstarr/Ruby-Quizzes-New/quiz5/Sokoban.rb'
+game = RubyQuiz::Sokoban.new('')
+

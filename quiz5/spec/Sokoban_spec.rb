@@ -14,7 +14,7 @@ describe "Sokoban" do
 ##### ### #\@##  ..#
     #     #########
     #######
-"    );
+"    )
     game.puzzle_matrix().should ==
     [
         [ ' ', ' ', ' ', ' ', '#', '#', '#', '#', '#', ],
@@ -50,7 +50,6 @@ describe "Sokoban" do
 # o.#
 #####"
     )
-    maze.validate()
     maze.error_message.should == 'Maze does not have person';
     maze = RubyQuiz::Sokoban.new(
 "#####
@@ -66,17 +65,16 @@ describe "Sokoban" do
     ]
     maze.person_position().should == [2,2]
   end
-#
-#  it 'should error if not equal number of crates and storage' do
-#    Sokoban.new( '
-######
-##*oo#
-##@ .#
-######
-#    ').should == nil;
-#    Sokoban.error_message.should == 'Maze does not have equal number of crates and storage';
-#  end
-#
+
+  it 'should error if not equal number of crates and storage' do
+    maze = RubyQuiz::Sokoban.new(
+"#####
+#*o #
+#+ .#
+#####")
+    maze.error_message.should == 'Maze does not have equal number of crates and storage';
+  end
+
   it 'should not allow move into stuck crate or wall' do
     maze = RubyQuiz::Sokoban.new(
 "######
@@ -137,5 +135,21 @@ describe "Sokoban" do
         [ '#', '#', '#', '#', '#', '#', ],
     ]
     maze.person_position().should == [1,1]
+  end
+
+  it 'should say that user wins' do
+    maze = RubyQuiz::Sokoban.new(
+"######
+# \@o.#
+######")
+    maze.move('right')
+    maze.puzzle_matrix().should ==
+    [
+        [ '#', '#', '#', '#', '#', '#', ],
+        [ '#', ' ', ' ', '@', '*', '#', ],
+        [ '#', '#', '#', '#', '#', '#', ],
+    ]
+    maze.person_position().should == [1,3]
+    maze.error_message.should == 'You Win!';
   end
 end

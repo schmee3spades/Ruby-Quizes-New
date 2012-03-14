@@ -1,21 +1,50 @@
 require 'matrix'
 module RubyQuiz
   class Sokoban
-    attr_reader :puzzle_matrix, :man_row, :man_column, :error_message
+    attr_reader :puzzle_matrix, :man_row, :man_column, :error_message, :defined_mazes
 
-    def initialize()
-      @puzzle_matrix = Array.new()
-      self.parse_string_into_puzzle_matrix(self.get_maze_string())
-    end
     def initialize(string)
       @puzzle_matrix = Array.new()
-      self.parse_string_into_puzzle_matrix(string)
+      if string == '' then
+        self.select_maze
+      else
+        self.parse_string_into_puzzle_matrix(string)
+      end
+      self.validate()
+    end
+
+    def select_maze()
+      self.load_saved_mazes()
+      puts "Select maze: (1 - #{@defined_mazes.size + 1})"
+      maze_number = gets.chomp
+      return select_maze unless maze_number.match(/^(\d+)$/)
+      if (maze_number.to_i < 1) or maze_number.to_i > @defined_mazes.size then
+        return self.select_maze()
+      end
+      parse_string_into_puzzle_matrix(@defined_mazes[maze_number.to_i-1])
+      run_interactive_mode()
+      return select_maze
     end
 
     def validate()
       if self.person_position() == nil
         @error_message = 'Maze does not have person';
       end
+      if count_character('o') != (count_character('.') + count_character('+')) then
+        @error_message = 'Maze does not have equal number of crates and storage';
+      end
+    end
+
+    def count_character(string)
+      count = 0
+      @puzzle_matrix.each do |row|
+        row.each do |value|
+          if value.to_s == string then
+            count += 1
+          end
+        end
+      end
+      return count
     end
 
     def get_maze_string()
@@ -42,7 +71,12 @@ module RubyQuiz
     end
 
     def move(string)
+      @error_message = '';
       self.move_piece(@man_row, @man_column, string)
+      if count_character('o') == 0 then
+        @error_message = 'You Win!';
+      end
+      self.print_maze()
     end
 
     def destination_from_direction(row, column, direction)
@@ -61,7 +95,32 @@ module RubyQuiz
       return row, column
     end
 
+    def run_interactive_mode()
+      print_maze()
+      while true
+        input = gets.chomp
+        if input != nil
+          if input == 'q'
+            return
+          end
+          if input == '8' or input == 'k' then
+            self.move('up')
+          end
+          if input == '4' or input == 'h' then
+            self.move('left')
+          end
+          if input == '2' or input == 'j' then
+            self.move('down')
+          end
+          if input == '6' or input == 'l' then
+            self.move('right')
+          end
+        end
+      end
+    end
+
     def print_maze
+      print "\e[2J"
       @puzzle_matrix.each do |row|
         puts row.join('')
       end
@@ -69,7 +128,6 @@ module RubyQuiz
     end
 
     def move_piece(from_row, from_column, direction)
-self.print_maze()
       to_row, to_column = destination_from_direction(from_row, from_column, direction)
 
       int_to_row = to_row.to_i
@@ -80,9 +138,7 @@ self.print_maze()
       to_icon = @puzzle_matrix[int_to_row][int_to_column];
       from_icon = @puzzle_matrix[int_from_row][int_from_column];
 
-      @error_message = '';
       if to_icon == '#' then
-puts "wall"
         if @puzzle_matrix[int_from_row][int_from_column] == '@' or
            @puzzle_matrix[int_from_row][int_from_column] == '+' then
           @error_message = 'can not move into wall';
@@ -101,7 +157,6 @@ puts "wall"
           @man_row = int_to_row
           @man_column = int_to_column
         end
-self.print_maze()
         return 1
       end
 
@@ -120,7 +175,6 @@ self.print_maze()
               self.leaving_changes_symbol_to(from_icon)
             @man_row = int_to_row
             @man_column = int_to_column
-self.print_maze()
             return 1
           else
             @error_message = 'can not move crate';
@@ -162,146 +216,770 @@ self.print_maze()
       end
     end
 
+    def load_saved_mazes()
+       @defined_mazes = [
+"    #####
+    #   #
+    #o  #
+  ###  o##
+  #  o o #
+### # ## #   ######
+#   # ## #####  ..#
+# o  o          ..#
+##### ### #\@##  ..#
+    #     #########
+    #######",
+
+"############
+#..  #     ###
+#..  # o  o  #
+#..  #o####  #
+#..    \@ ##  #
+#..  # #  o ##
+###### ##o o #
+  # o  o o o #
+  #    #     #
+  ############",
+
+"        ########
+        #     \@#
+        # o#o ##
+        # o  o#
+        ##o o #
+######### o # ###
+#....  ## o  o  #
+##...    o  o   #
+#....  ##########
+########",
+
+"           ########
+           #  ....#
+############  ....#
+#    #  o o   ....#
+# ooo#o  o #  ....#
+#  o     o #  ....#
+# oo #o o o########
+#  o #     #
+## #########
+#    #    ##
+#     o   ##
+#  oo#oo  \@#
+#    #    ##
+###########",
+
+"        #####
+        #   #####
+        # #o##  #
+        #     o #
+######### ###   #
+#....  ## o  o###
+#....    o oo ##
+#....  ##o  o \@#
+#########  o  ##
+        # o o  #
+        ### ## #
+          #    #
+          ######",
+
+"######  ###
+#..  # ##\@##
+#..  ###   #
+#..     oo #
+#..  # # o #
+#..### # o #
+#### o #o  #
+   #  o# o #
+   # o  o  #
+   #  ##   #
+   #########",
+
+"       #####
+ #######   ##
+## # \@## oo #
+#    o      #
+#  o  ###   #
+### #####o###
+# o  ### ..#
+# o o o ...#
+#    ###...#
+# oo # #...#
+#  ### #####
+####",
+
+"  ####
+  #  ###########
+  #    o   o o #
+  # o# o #  o  #
+  #  o o  #    #
+### o# #  #### #
+#\@#o o o  ##   #
+#    o #o#   # #
+#   o    o o o #
+#####  #########
+  #      #
+  #      #
+  #......#
+  #......#
+  #......#
+  ########",
+
+"          #######
+          #  ...#
+      #####  ...#
+      #      . .#
+      #  ##  ...#
+      ## ##  ...#
+     ### ########
+     # ooo ##
+ #####  o o #####
+##   #o o   #   #
+#\@ o  o    o  o #
+###### oo o #####
+     #      #
+     ########",
+
+" ###  #############
+##\@####       #   #
+# oo   oo  o o ...#
+#  ooo#    o  #...#
+# o   # oo oo #...#
+###   #  o    #...#
+#     # o o o #...#
+#    ###### ###...#
+## #  #  o o  #...#
+#  ## # oo o o##..#
+# ..# #  o      #.#
+# ..# # ooo ooo #.#
+##### #       # #.#
+    # ######### #.#
+    #           #.#
+    ###############",
+
+"          ####
+     #### #  #
+   ### \@###o #
+  ##      o  #
+ ##  o oo## ##
+ #  #o##     #
+ # # o oo # ###
+ #   o #  # o #####
+####    #  oo #   #
+#### ## o         #
+#.    ###  ########
+#.. ..# ####
+#...#.#
+#.....#
+#######",
+
+"################
+#              #
+# # ######     #
+# #  o o o o#  #
+# #   o\@o   ## ##
+# #  o o o###...#
+# #   o o  ##...#
+# ###ooo o ##...#
+#     # ## ##...#
+#####   ## ##...#
+    #####     ###
+        #     #
+        #######",
+
+"   #########
+  ##   ##  #####
+###     #  #    ###
+#  o #o #  #  ... #
+# # o#\@o## # #.#. #
+#  # #o  #    . . #
+# o    o # # #.#. #
+#   ##  ##o o . . #
+# o #   #  #o#.#. #
+## o  o   o  o... #
+ #o ######    ##  #
+ #  #    ##########
+ ####",
+
+"       #######
+ #######     #
+ #     # o\@o #
+ #oo #   #########
+ # ###......##   #
+ #   o......## # #
+ # ###......     #
+##   #### ### #o##
+#  #o   #  o  # #
+#  o ooo  # o## #
+#   o o ###oo # #
+#####     o   # #
+    ### ###   # #
+      #     #   #
+      ########  #
+             ####",
+
+"   ########
+   #   #  #
+   #  o   #
+ ### #o   ####
+ #  o  ##o   #
+ #  # \@ o # o#
+ #  #      o ####
+ ## ####o##     #
+ # o#.....# #   #
+ #  o..**. o# ###
+##  #.....#   #
+#   ### #######
+# oo  #  #
+#  #     #
+######   #
+     #####",
+
+"#####
+#   ##
+#    #  ####
+# o  ####  #
+#  oo o   o#
+###\@ #o    ##
+ #  ##  o o ##
+ # o  ## ## .#
+ #  #o##o  #.#
+ ###   o..##.#
+  #    #.*...#
+  # oo #.....#
+  #  #########
+  #  #
+  ####",
+
+"   ##########
+   #..  #   #
+   #..      #
+   #..  #  ####
+  #######  #  ##
+  #            #
+  #  #  ##  #  #
+#### ##  #### ##
+#  o  ##### #  #
+# # o  o  # o  #
+# \@o  o   #   ##
+#### ## #######
+   #    #
+   ######",
+
+"     ###########
+     #  .  #   #
+     # #.    \@ #
+ ##### ##..# ####
+##  # ..###     ###
+# o #...   o #  o #
+#    .. ##  ## ## #
+####o##o# o #   # #
+  ## #    #o oo # #
+  #  o # #  # o## #
+  #               #
+  #  ###########  #
+  ####         ####",
+
+"  ######
+  #   \@####
+##### o   #
+#   ##    ####
+# o #  ##    #
+# o #  ##### #
+## o  o    # #
+## o o ### # #
+## #  o  # # #
+## # #o#   # #
+## ###   # # ######
+#  o  #### # #....#
+#    o    o   ..#.#
+####o  o# o   ....#
+#       #  ## ....#
+###################",
+
+"    ##########
+#####        ####
+#     #   o  #\@ #
+# #######o####  ###
+# #    ## #  #o ..#
+# # o     #  #  #.#
+# # o  #     #o ..#
+# #  ### ##     #.#
+# ###  #  #  #o ..#
+# #    #  ####  #.#
+# #o   o  o  #o ..#
+#    o # o o #  #.#
+#### o###    #o ..#
+   #    oo ###....#
+   #      ## ######
+   ########",
+
+"#########
+#       #
+#       ####
+## #### #  #
+## #\@##    #
+# ooo o  oo#
+#  # ## o  #
+#  # ##  o ####
+####  ooo o#  #
+ #   ##   ....#
+ # #   # #.. .#
+ #   # # ##...#
+ ##### o  #...#
+     ##   #####
+      #####",
+
+"######     ####
+#    #######  #####
+#   o#  #  o  #   #
+#  o  o  o # o o  #
+##o o   # \@# o    #
+#  o ########### ##
+# #   #.......# o#
+# ##  # ......#  #
+# #   o........o #
+# # o #.... ..#  #
+#  o o####o#### o#
+# o   ### o   o  ##
+# o     o o  o    #
+## ###### o ##### #
+#         #       #
+###################",
+
+"    #######
+    #  #  ####
+##### o#o #  ##
+#.. #  #  #   #
+#.. # o#o #  o####
+#.  #     #o  #  #
+#..   o#  # o    #
+#..\@#  #o #o  #  #
+#.. # o#     o#  #
+#.. #  #oo#o  #  ##
+#.. # o#  #  o#o  #
+#.. #  #  #   #   #
+##. ####  #####   #
+ ####  ####   #####",
+
+"###############
+#..........  .####
+#..........oo.#  #
+###########o #   ##
+#      o  o     o #
+## ####   #  o #  #
+#      #   ##  # ##
+#  o#  # ##  ### ##
+# o #o###    ### ##
+###  o #  #  ### ##
+###    o ## #  # ##
+ # o  #  o  o o   #
+ #  o  o#ooo  #   #
+ #  #  o      #####
+ # \@##  #  #  #
+ ##############",
+
+"####
+#  ##############
+#  #   ..#......#
+#  # # ##### ...#
+##o#    ........#
+#   ##o######  ####
+# o #     ######\@ #
+##o # o   ######  #
+#  o #ooo##       #
+#      #    #o#o###
+# #### #ooooo    #
+# #    o     #   #
+# #   ##        ###
+# ######o###### o #
+#        #    #   #
+##########    #####",
+
+" #######
+ #  #  #####
+##  #  #...###
+#  o#  #...  #
+# o #oo ...  #
+#  o#  #... .#
+#   # o########
+##o       o o #
+##  #  oo #   #
+ ######  ##oo\@#
+      #      ##
+      ########",
+
+" #################
+ #...   #    #   ##
+##.....  o## # #o #
+#......#  o  #    #
+#......#  #  # #  #
+######### o  o o  #
+  #     #o##o ##o##
+ ##   o    # o    #
+ #  ## ### #  ##o #
+ # o oo     o  o  #
+ # o    o##o ######
+ #######  \@ ##
+       ######",
+
+"         #####
+     #####   #
+    ## o  o  ####
+##### o  o o ##.#
+#       oo  ##..#
+#  ###### ###.. #
+## #  #    #... #
+# o   #    #... #
+#\@ #o ## ####...#
+####  o oo  ##..#
+   ##  o o  o...#
+    # oo  o #  .#
+    #   o o  ####
+    ######   #
+         #####",
+
+"#####
+#   ##
+# o  #########
+## # #       ######
+## #   o#o#\@  #   #
+#  #      o #   o #
+#  ### ######### ##
+#  ## ..*..... # ##
+## ## *.*..*.* # ##
+# o########## ##o #
+#  o   o  o    o  #
+#  #   #   #   #  #
+###################",
+
+"       ###########
+       #   #     #
+#####  #     o o #
+#   ##### o## # ##
+# o ##   # ## o  #
+# o  \@oo # ##ooo #
+## ###   # ##    #
+## #   ### #####o#
+## #     o  #....#
+#  ### ## o #....##
+# o   o #   #..o. #
+#  ## o #  ##.... #
+#####   ######...##
+    #####    #####",
+
+"  ####
+  #  #########
+ ##  ##  #   #
+ #  o# o\@o   ####
+ #o  o  # o o#  ##
+##  o## #o o     #
+#  #  # #   ooo  #
+# o    o  o## ####
+# o o #o#  #  #
+##  ###  ###o #
+ #  #....     #
+ ####......####
+   #....####
+   #...##
+   #...#
+   #####",
+
+"      ####
+  #####  #
+ ##     o#
+## o  ## ###
+#\@o o # o  #
+#### ##   o#
+ #....#o o #
+ #....#   o#
+ #....  oo ##
+ #... # o   #
+ ######o o  #
+      #   ###
+      #o ###
+      #  #
+      ####",
+
+" ###########
+ #     ##  #
+ #   o   o #
+#### ## oo #
+#   o #    #
+# ooo # ####
+#   # # o ##
+#  #  #  o #
+# o# o#    #
+#   ..# ####
+####.. o #\@#
+#.....# o# #
+##....#  o #
+ ##..##    #
+  ##########",
+
+" #########
+ #....   ##
+ #.#.#  o ##
+##....# # \@##
+# ....#  #  ##
+#     #o ##o #
+## ###  o    #
+ #o  o o o#  #
+ # #  o o ## #
+ #  ###  ##  #
+ #    ## ## ##
+ #  o #  o  #
+ ###o o   ###
+   #  #####
+   ####",
+
+"############ ######
+#   #    # ###....#
+#   oo#   \@  .....#
+#   # ###   # ....#
+## ## ###  #  ....#
+ # o o     # # ####
+ #  o o##  #      #
+#### #  #### # ## #
+#  # #o   ## #    #
+# o  o  # ## #   ##
+# # o o    # #   #
+#  o ## ## # #####
+# oo     oo  #
+## ## ### o  #
+ #    # #    #
+ ###### ######",
+
+"            #####
+#####  ######   #
+#   ####  o o o #
+# o   ## ## ##  ##
+#   o o     o  o #
+### o  ## ##     ##
+  # ##### #####oo #
+ ##o##### \@##     #
+ # o  ###o### o  ##
+ # o  #   ###  ###
+ # oo o #   oo #
+ #     #   ##  #
+ #######.. .###
+    #.........#
+    #.........#
+    ###########",
+
+"###########
+#......   #########
+#......   #  ##   #
+#..### o    o     #
+#... o o #   ##   #
+#...#o#####    #  #
+###    #   #o  #o #
+  #  oo o o  o##  #
+  #  o   #o#o ##o #
+  ### ## #    ##  #
+   #  o o ## ######
+   #    o  o  #
+   ##   # #   #
+    #####\@#####
+        ###",
+
+"      ####
+####### \@#
+#     o  #
+#   o## o#
+##o#...# #
+ # o...  #
+ # #. .# ##
+ #   # #o #
+ #o  o    #
+ #  #######
+ ####",
+
+"             ######
+ #############....#
+##   ##     ##....#
+#  oo##  o \@##....#
+#      oo o#  ....#
+#  o ## oo # # ...#
+#  o ## o  #  ....#
+## ##### ### ##.###
+##   o  o ##   .  #
+# o###  # ##### ###
+#   o   #       #
+#  o #o o o###  #
+# ooo# o   # ####
+#    #  oo #
+######   ###
+     #####",
+
+"    ############
+    #          ##
+    #  # #oo o  #
+    #o #o#  ## \@#
+   ## ## # o # ##
+   #   o #o  # #
+   #   # o   # #
+   ## o o   ## #
+   #  #  ##  o #
+   #    ## oo# #
+######oo   #   #
+#....#  ########
+#.#... ##
+#....   #
+#....   #
+#########",
+
+"           #####
+          ##   ##
+         ##     #
+        ##  oo  #
+       ## oo  o #
+       # o    o #
+####   #   oo #####
+#  ######## ##    #
+#.            ooo\@#
+#.# ####### ##   ##
+#.# #######. #o o##
+#........... #    #
+##############  o #
+             ##  ##
+              ####",
+
+"     ########
+  ####      ######
+  #    ## o o   \@#
+  # ## ##o#o o o##
+### ......#  oo ##
+#   ......#  #   #
+# # ......#o  o  #
+# #o...... oo# o #
+#   ### ###o  o ##
+###  o  o  o  o #
+  #  o  o  o  o #
+  ######   ######
+       #####",
+
+"        #######
+    #####  #  ####
+    #   #   o    #
+ #### #oo ## ##  #
+##      # #  ## ###
+#  ### o#o  o  o  #
+#...    # ##  #   #
+#...#    \@ # ### ##
+#...#  ###  o  o  #
+######## ##   #   #
+          #########",
+
+" #####
+ #   #
+ # # #######
+ #      o\@######
+ # o ##o ###   #
+ # #### o    o #
+ # ##### #  #o ####
+##  #### ##o      #
+#  o#  o  # ## ## #
+#         # #...# #
+######  ###  ...  #
+     #### # #...# #
+          # ### # #
+          #       #
+          #########",
+
+"##### ####
+#...# #  ####
+#...###  o  #
+#....## o  o###
+##....##   o  #
+###... ## o o #
+# ##    #  o  #
+#  ## # ### ####
+# o # #o  o    #
+#  o \@ o    o  #
+#   # o oo o ###
+#  ######  ###
+# ##    ####
+###",
+
+"##########
+#        ####
+# ###### #  ##
+# # o o o  o #
+#       #o   #
+###o  oo#  ###
+  #  ## # o##
+  ##o#   o \@#
+   #  o o ###
+   # #   o  #
+   # ##   # #
+  ##  ##### #
+  #         #
+  #.......###
+  #.......#
+  #########",
+
+"         ####
+ #########  ##
+##  o      o #####
+#   ## ##   ##...#
+# #oo o oo#o##...#
+# #   \@   #   ...#
+#  o# ###oo   ...#
+# o  oo  o ##....#
+###o       #######
+  #  #######
+  ####",
+
+"  #########
+  #*.*#*.*#
+  #.*.*.*.#
+  #*.*.*.*#
+  #.*.*.*.#
+  #*.*.*.*#
+  ###   ###
+    #   #
+###### ######
+#           #
+# o o o o o #
+## o o o o ##
+ #o o o o o#
+ #   o\@o   #
+ #  #####  #
+ ####   ####",
+
+"       ####
+       #  ##
+       #   ##
+       # oo ##
+     ###o  o ##
+  ####    o   #
+###  # #####  #
+#    # #....o #
+# #   o ....# #
+#  o # #.*..# #
+###  #### ### #
+  #### \@o  ##o##
+     ### o     #
+       #  ##   #
+       #########",
+
+"      ############
+     ##..    #   #
+    ##..* o    o #
+   ##..*.# # # o##
+   #..*.# # # o  #
+####...#  #    # #
+#  ## #          #
+# \@o o ###  #   ##
+# o   o   # #   #
+###oo   # # # # #
+  #   o   # # #####
+  # o# #####      #
+  #o   #   #    # #
+  #  ###   ##     #
+  #  #      #    ##
+  ####      ######"
+       ]
+    end
   end
 end
-
-#     def encrypt
-#       self.process :add_keystreams
-#     end
-# 
-#     def decrypt
-#       self.process :subtract_keystreams
-#     end
-# 
-#     def process(process_method)
-#       msg = self.massage_message @message
-#       keystream = self.find_keystream_letters(msg.length)
-# 
-#       keystream, msg = [keystream, msg].map do |m|
-#         self.to_numbers self.groups_of_five(m).join(' ').chars.to_a
-#       end
-#       processed = self.send process_method, msg, keystream
-# 
-#       self.to_letters(processed).join
-#     end
-# 
-#     def massage_message(string)
-#       string.upcase.gsub(/[^A-Z]/, '')
-#     end
-# 
-#     def groups_of_five(string)
-#       string.scan(/.{1,5}/).map { |g| g }
-#     end
-# 
-#     def to_numbers(arr)
-#       arr.map { |c| map_char c }
-#     end
-# 
-#     def to_letters(arr)
-#       arr.map { |c| map_char c }
-#     end
-# 
-#     def add_keystreams(m, k)
-#       [].tap do |result|
-#         0.upto(m.size-1) do |n|
-#           result << case
-#             when m[n] == ' ' || k[n] == ' '
-#               ' '
-#             when (sum = m[n] + k[n]) > 26
-#               sum - 26
-#            else
-#               sum
-#           end
-#         end
-#       end
-#     end
-# 
-#     def subtract_keystreams(m, k)
-#       [].tap do |result|
-#         0.upto(m.size-1) do |n|
-#           result << case
-#             when m[n] == ' ' || k[n] == ' '
-#               ' '
-#             when m[n] <= k[n]
-#               m[n].to_i + 26 - k[n].to_i
-#             else
-#               m[n].to_i - k[n].to_i
-#           end
-#         end
-#       end
-#     end
-# 
-#     def move_jokers
-#       [1, 2].each do |offset|
-#         from = @cards.index { |c| c.suit.nil? && c.face == offset }
-#         to = case @cards[from]
-#           when @cards[-1]
-#             offset
-#           when @cards[-2]
-#             offset == 1 ? from + offset : 1
-#           else
-#             from + offset
-#         end
-#         @cards.insert(to, @cards.delete_at(from))
-#       end
-#     end
-# 
-#     def triple_cut
-#       left, right = @cards.select { |c| c.suit.nil? }.map { |c| @cards.index(c) }
-# 
-#       @cards = @cards[right+1...@cards.size] + @cards[left..right] + @cards[0...left]
-#     end
-# 
-#     def count_cut
-#       @cards.insert(-2, *@cards.slice!(0, @cards.last.value))
-#     end
-# 
-#     def find_keystream_letters(n=1)
-#       [].tap do |result|
-#         until result.size == n
-#           %W[ move_jokers triple_cut count_cut ].each { |m| self.send(m) }
-#           output = @cards.take(@cards.first.value + 1).last.to_letter
-#           result << output unless output == ' '
-#         end
-#       end.join
-#     end
-# 
-#     def prettify
-#       @cards.map(&:print_value)
-#     end
-# 
-#     private
-#       def map_char(char)
-#         case char
-#           when 1..26
-# puts "char %{char}  result: %{(char + 64).chr}"
-#             (char + 64).chr
-#           when ?A..?Z
-#             char.ord % 64
-#           else
-#             char
-#         end
-#       end
-#   end
-# 
-#   class Card
-#     attr_reader :face, :suit
-# 
-#     def initialize(face, suit)
-#       @face, @suit = face, suit
-#     end
-# 
-#     def print_value
-#       @print_value ||= (@suit.nil? ? (@face + 64).chr : @face + (@suit * 13))
-#     end
-# 
-#     def value
-#       @value ||= (@suit.nil? ? 53 : @face + (@suit * 13))
-#     end
-# 
-#     def to_letter
-#       @letter ||= self.suit.nil? ? ' ' : (self.value - (@suit > 1 ? 26 : 0) + 64).chr
-#     end
-#   end
-# end
 
