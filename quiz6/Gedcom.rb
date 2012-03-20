@@ -1,0 +1,43 @@
+module RubyQuiz
+  class Gedcom
+    def initialize(string)
+      if string == '' then
+        print 'No file name given'
+      else
+        self.read_file(string)
+      end
+    end
+
+    def read_file(string)
+      # @lines = array of lines in file
+      # gedcom = GedcomTreeItem.new(-1, 'gencom', '')
+      # gedcom.add_children(self.parse_children(level, @lines))
+    end
+
+    def parse_children (current_element,lines)
+      # return if no more lines
+      # parse into level, tag, value
+      # compare_element.level to current
+      # if same, then
+      #   pop from array
+      #   create new treeitem
+      #   call parse_children current_level, lines
+      # if lower level than current_element.level then
+      #   current_element.add_children(self.parse_children(level, @lines))
+      # if greater level
+      #   return current_element   *** needs to be array of same level elements
+    end
+  end
+  class GedcomTreeItem
+    attr_reader :level, :label, :value, :children
+    def initialize(level, label, value)
+      @level, @label, @value = level, label, value
+    end
+    def add_children(children_to_add)
+      chlidren_to_add.map do |child|
+        @children.push(child)
+      end
+    end
+  end
+end
+

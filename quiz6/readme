@@ -1,0 +1,3 @@
+require '/home/bstarr/Ruby-Quizzes-New/quiz6/Gedcom.rb'
+Gedcom = RubyQuiz::Gedcom.new('/home/bstarr/Ruby-Quizzes-New/quiz6/files/1')
+
