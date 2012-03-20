@@ -58,4 +58,3 @@ module RubyQuiz
 
   end
 end
-
