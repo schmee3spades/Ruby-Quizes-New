@@ -1,44 +1,45 @@
 module RubyQuiz
+  GEDCOM_ROOT  = -1
+  INDI         = 0
+  INDENT       = '  '
+
   class Gedcom
     attr_reader :gedcom_tree
 
     def initialize(string)
-      if string == '' then
-        print 'No file name given'
-      else
-        self.read_file(string)
-      end
-    end
-
-    def read_file(string)
-      source_file = File.new(string, "r")
       lines=[]
-      source_file.each_line {|line|
-        lines.push line
-      }
-      gedcom_tree = GedcomTreeItem.new(-1, 'gencom', '')
-      gedcom_tree.add_children(self.parse_children(gedcom_tree, lines))
+      source_file = File.new(string, "r").each_line {|line| lines.push line }
+      @gedcom_tree = GedcomTreeItem.new(GEDCOM_ROOT, 'gedcom', '')
+      @gedcom_tree.add_children(self.parse_children(gedcom_tree, lines, nil))
     end
 
-    def parse_children (current_element,lines)
-      return
-      # return if no more lines
-      # parse into level, tag, value
-      # compare_element.level to current
-      # if same, then
-      #   pop from array
-      #   create new treeitem
-      #   call parse_children current_level, lines
-      # if lower level than current_element.level then
-      #   current_element.add_children(self.parse_children(level, @lines))
-      # if greater level
-      #   return current_element   *** needs to be array of same level elements
+    def parse_children (current_element,lines,syblings)
+      syblings = [] if syblings.nil?
+      while lines.size > 0 do
+        m = lines[0].match('\s*(\d+)\s+([^ ]+)\s+(.*$)')
+        if m.size != 4 then
+            lines.shift
+            next
+        end
+
+        new_tree_element = GedcomTreeItem.new(m[1].to_i, m[2], m[3])
+        return syblings if (m[1].to_i < current_element.level)
+
+        lines.shift
+        if (m[1].to_i == current_element.level)
+          new_tree_element.add_children(self.parse_children(new_tree_element,lines,nil))
+          syblings.push(new_tree_element)
+        else
+          current_element.add_children(self.parse_children(new_tree_element,lines,[ new_tree_element ]))
+          return self.parse_children(current_element,lines,syblings)
+        end
+      end
+      return syblings
     end
 
     def print_xml
-      puts "hi!"
+      @gedcom_tree.print_tree
     end
-
   end
 
   class GedcomTreeItem
@@ -49,10 +50,33 @@ module RubyQuiz
       @children = []
     end
 
-    def add_children(children_to_add)
-      return if children_to_add.nil?
-      children_to_add.map do |child|
-        @children.push(child)
+    def add_children(children_to_add = [])
+      children_to_add.each { |child| @children.push(child) }
+    end
+
+    def print_tree
+      return_string = "\n" + (INDENT * (@level + 1))
+      if @children.size == 0 then
+        return_string << "<#{@label.downcase}>#{value}</#{@label.downcase}>"
+      else
+        case @level
+        when GEDCOM_ROOT
+          return_string << "<#{@label.downcase}>"
+        when INDI
+          return_string << "<indi id=\"#{@label}\">"
+        else
+          return_string << "<#{@label.downcase} value=\"#{value}\">"
+        end
+
+        @children.each { |child| return_string << child.print_tree }
+
+        return_string << "\n" + (INDENT * (@level + 1))
+        case @level
+        when INDI
+          return_string << "</#{@value.downcase}>"
+        else
+          return_string << "</#{@label.downcase}>"
+        end
       end
     end
 
