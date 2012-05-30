@@ -10,38 +10,40 @@ module RubyQuiz
 
     def find_solution()
       (1..@numbers.length).each { |num_cards_used|
-        @numbers.combination(num_cards_used).to_a.uniq.each { |sn|
+        @numbers.combination(num_cards_used).to_a.each { |sn|
 
           sn.permutation.to_a.each { |attempting_array|
             operator_arrays = [['*'] * (attempting_array.length-1),
                 ['+'] * (attempting_array.length-1),
                 ['-'] * (attempting_array.length-1),
                 ['/'] * (attempting_array.length-1)].flatten.combination(attempting_array.length - 1).to_a.uniq
-
             num_possible_parens = (num_cards_used * (num_cards_used + 1)) / 2
-            (0..num_possible_parens).each { |number_of_parens| 
-              paren_arrays_open  = [['('] * number_of_parens,
-                                    [' '] * (num_possible_parens - number_of_parens)].flatten.permutation.to_a.uniq
-              paren_arrays_open.each { |popen|
-                paren_arrays_close = [[')'] * number_of_parens,
-                                      [' '] * (num_possible_parens - number_of_parens)].flatten.permutation.to_a.uniq
-                paren_arrays_close.each { |pclose|
-                  next if(!pclose.index([')']).nil? and !popen.index(['(']).nil? and pclose.index([')']) > popen.index(['(']))
-                  next if(pclose.count([')']) != popen.count(['(']));
-                  operator_arrays.each { |op|
-                    computation_string = ''
-                    pa = popen.zip(pclose).flatten
-                    next unless(is_valid_paren_array(pa) == 1)
-                    parens_open_array = popen.dup
-                    parens_close_array = pclose.dup
-                    (0..num_cards_used-1).each { |iter|
-                      (iter..attempting_array.length-1).each { computation_string += parens_open_array.shift }
-                      computation_string += "#{attempting_array[iter]}"
-                      (0..iter).each { computation_string += parens_close_array.shift }
-                      computation_string += "#{op[iter]}"
+            paren_arrays_open = [['('] * num_possible_parens,
+                                 [' '] * num_possible_parens].flatten.combination(num_possible_parens).to_a.uniq
+            paren_arrays_close = [[')'] * num_possible_parens,
+                                  [' '] * num_possible_parens].flatten.combination(num_possible_parens).to_a.uniq
+            paren_arrays_open.each { |popen|
+              paren_arrays_close.each { |pclose|
+                operator_arrays.each { |op|
+                  parens_open_array = popen.dup
+                  parens_close_array = pclose.dup
+                  computation_string = ''
+                  parens_open_array.permutation.to_a.each { |perm_parens|
+                    parens_open_array.permutation.to_a.each { |perm_parens_open|
+                      parens_open_array.permutation.to_a.each { |perm_parens_close|
+                        pa = popen.zip(pclose).flatten
+                        next unless(is_valid_paren_array(pa) == 1)
+                        (0..num_cards_used-1).each { |iter|
+                          (iter..attempting_array.length-1).each { computation_string += perm_parens_open.shift }
+                          computation_string += "#{attempting_array[iter]}"
+                          (0..iter).each { computation_string += perm_parens_close.shift }
+                          computation_string += "#{op[iter]}"
+                        }
+
+                        check_solution(computation_string)
+                        return if(@found == 1)
+                      }
                     }
-                    check_solution(computation_string)
-                    return if(@found == 1)
                   }
                 }
               }
@@ -69,8 +71,8 @@ module RubyQuiz
 
     def check_solution(string)
         begin
-puts(string)
            this_value = eval(string).to_f
+puts "Calc: #{string}  yields value: #{this_value}"
         if this_value == @target then
             @found = 1
             @closest_solution = string
