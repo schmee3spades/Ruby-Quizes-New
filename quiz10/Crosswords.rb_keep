@@ -1,0 +1,103 @@
+module RubyQuiz
+  class Crosswords
+    attr_reader :crossword, :cell_height, :cell_width, :clue_number;
+
+    def initialize( filename )
+      @crossword = Array.new()
+      load_file( filename )
+      @cell_height = 2
+      @cell_width = 4
+      @clue_number = 1
+    end
+
+    def load_file( filename )
+      file = File.open(filename, "rb");
+      contents = file.read
+      lines = contents.split(/\n/)
+      lines.each { |line|
+        line.gsub!(/\r/, '')
+        line.gsub!(/\s+/, '')
+        @crossword.push(line.split(//))
+      }
+    end
+
+    def print_crossword()
+      0.upto(@crossword.length() - 1) do |row|
+        line = @crossword[row]
+
+        # row divider
+        0.upto(line.length() - 1) do |column|
+          (is_entry(row-1, column-1) || is_entry(row, column) ||
+           is_entry(row, column-1) || is_entry(row, column)) ?
+             print('#'):
+             print(' ');
+
+          (is_entry(row-1, column) || is_entry(row, column)) ?
+             print('#' * @cell_width):
+             print(' ' * @cell_width);
+        end
+        (is_entry(row, line.length() - 1) ||  is_entry(row-1, line.length() - 1)) ?
+          print("#\n"):
+          print(" \n");
+
+        create_cell(line, row, true)
+	0.upto(@cell_height - 1) do
+          create_cell(line, row, false)
+        end
+      end
+
+      0.upto(@crossword[@crossword.length()-1].length() - 1) do |column|
+        (is_entry(@crossword.length() - 1, column-1) || 
+         is_entry(@crossword.length() - 1, column)) ?
+          print('#'):
+          print(' ');
+
+        is_entry(@crossword.length() - 1, column) ?
+          print('#' * @cell_width):
+          print(' ' * @cell_width);
+      end
+
+      is_entry(@crossword.length() - 1, @crossword[@crossword.length()-1].length() - 1) ?
+        print('#'):
+        print(' ');
+    end
+
+    def create_cell( line, row, show_number )
+      cells_string = ''
+      0.upto(line.length() - 1) do |column|
+        (is_entry(row, column-1) || is_entry(row, column)) ?
+          cells_string += '#' :
+          cells_string += ' '
+
+        if is_entry(row, column) then
+          if show_number then
+puts "HERE!"
+            cells_string += printf("%#{cell_width}d", clue_number);
+          else
+            cells_string += ' ' * @cell_width;
+          end
+        else
+          cells_string += '#' * @cell_width
+        end
+      end
+      is_entry(row, (line.length() - 1)) ?
+          cells_string += '#' :
+          cells_string += ' '
+
+      0.upto(@cell_height) do
+        puts cells_string
+      end
+    end
+
+    def is_entry(row, column)
+      if((row < 0) || (column < 0)) then return false end
+      if(row > @crossword.length - 1) then return false end
+      if(column > @crossword[row].length - 1) then return false end
+      if(@crossword[row][column].eql?('X')) then return false end
+      return true
+    end
+
+  end
+end
+
+

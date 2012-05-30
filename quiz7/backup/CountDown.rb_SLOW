@@ -69,7 +69,6 @@ module RubyQuiz
 
     def check_solution(string)
         begin
-puts(string)
            this_value = eval(string).to_f
         if this_value == @target then
             @found = 1

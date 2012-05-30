@@ -22,9 +22,9 @@ module RubyQuiz
             (0..num_possible_parens).each { |number_of_parens| 
               paren_arrays_open  = [['('] * number_of_parens,
                                     [' '] * (num_possible_parens - number_of_parens)].flatten.permutation.to_a.uniq
+              paren_arrays_close = [[')'] * number_of_parens,
+                                    [' '] * (num_possible_parens - number_of_parens)].flatten.permutation.to_a.uniq
               paren_arrays_open.each { |popen|
-                paren_arrays_close = [[')'] * number_of_parens,
-                                      [' '] * (num_possible_parens - number_of_parens)].flatten.permutation.to_a.uniq
                 paren_arrays_close.each { |pclose|
                   next if(!pclose.index([')']).nil? and !popen.index(['(']).nil? and pclose.index([')']) > popen.index(['(']))
                   next if(pclose.count([')']) != popen.count(['(']));
@@ -69,8 +69,8 @@ module RubyQuiz
 
     def check_solution(string)
         begin
-puts(string)
            this_value = eval(string).to_f
+puts "Calc: #{string}  yields value: #{this_value}"
         if this_value == @target then
             @found = 1
             @closest_solution = string
